@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workshop {
+  id                Int               @id @default(autoincrement())
+  title             String
+  capacity          Int
+  // Allowed values: ACTIVE, CANCELLED
+  status            String            @default("ACTIVE")
+  createdAt         DateTime          @default(now())
+  registrations     Registration[]
+  notificationLogs  NotificationLog[]
+}
+
+model Member {
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  registrations    Registration[]
+  notificationLogs NotificationLog[]
+}
+
+model Registration {
+  id         Int      @id @default(autoincrement())
+  workshopId Int
+  memberId   Int
+  // Allowed values: CONFIRMED, CANCELLED
+  status     String   @default("CONFIRMED")
+  createdAt  DateTime @default(now())
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
+  member     Member   @relation(fields: [memberId], references: [id])
+
+  @@unique([workshopId, memberId])
+  @@index([workshopId])
+}
+
+model NotificationLog {
+  id            Int       @id @default(autoincrement())
+  type          String
+  recipientId   Int
+  workshopId    Int
+  // Allowed values: PENDING, DELIVERED, FAILED
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  lastAttemptAt DateTime?
+  createdAt     DateTime  @default(now())
+  recipient     Member    @relation(fields: [recipientId], references: [id])
+  workshop      Workshop  @relation(fields: [workshopId], references: [id])
+
+  @@index([status])
+}
